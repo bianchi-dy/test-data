@@ -1,0 +1,96 @@
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--  Load d3.js  -->
+  <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+</head>
+<body>
+
+	<svg id="map" width="100%" height="100%" viewBox="-75 0 1050 640" preserveAspectRatio="xMinYMin meet">
+
+  </svg>
+</body>
+<style>
+ // CSS
+</style>
+<script>
+  // The svg
+ 	var svg;
+
+  svg = d3.selectAll("svg").insert('g', ':first-child'); 
+
+  var width = +svg.attr("width");
+  var height = +svg.attr("height");
+  //svg.call(responsivefy)//.insert('g', ':first-child');
+  //svg.insert('g', ':first-child');
+
+  let active;
+  d3.json("https://raw.githubusercontent.com/bianchi-dy/gi-disappearances/main/mexico_states_180821.json", function(error, data) {
+    if (error) {
+      console.log("Cannot access github file", error);
+    };
+    console.log(data);
+    /* let topo = topojson.feature(data, data.objects.MEX_adm1); */
+    /* svg.append('g').attr('class', 'states')
+      .selectAll('states')
+      .data(topo.features)
+      .enter()
+      .append('path')
+      .attr('class', 'state')
+      .attr('id', (d) => 'state-' + d.properties.NAME_1)
+      .attr('fill', d => { 
+        if (active === undefined && d.properties.NAME_1 === 'Aguascalientes') {
+          return '#A33347';
+        } else {
+          return 'transparent';
+        }  
+      })
+      .attr("stroke", "black")
+      .attr("stroke-width", 1.5)
+      .attr("d", path)
+      .on('click', function(d) {
+      d3.selectAll('.state').attr('fill', 'transparent');
+      var name = d.properties.NAME_1;
+      var text = d.properties.en;
+      console.log(text);
+      d3.select(this).attr('fill', '#A33347').attr('fill-opacity', 1);
+      document.getElementsByClassName('map-location-en')[0].innerHTML = name;
+      document.getElementsByClassName('map-body-text-en')[0].innerHTML = text;
+      active = 'state-' + d.properties.NAME_1;
+    })
+      .on('mouseover', function(d) {
+      if (d3.select(this).attr('id') !== active) {
+        d3.select(this).attr('fill', '#A33347').attr('fill-opacity', 0.5);
+      }
+    })
+      .on('mouseout', function(d) {
+      if (d3.select(this).attr('id') !== active) {
+        d3.select(this).attr('fill-opacity', 0);
+      }
+    }) */
+      
+  });
+  function responsivefy(svg) {
+    console.log("responsivefy")
+    const container = d3.select(svg.node().parentNode),
+          width = parseInt(svg.style('width'), 10),
+          height = parseInt(svg.style('height'), 10),
+          aspect = width / height;
+    svg.attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMinYMid')
+      .call(resize);
+    d3.select(window).on(
+      'resize.' + container.attr('id'),
+      resize
+    );
+    function resize() {
+      const w = parseInt(container.style('width'));
+      svg.attr('width', w);
+      svg.attr('height', Math.round(w / aspect));
+    }
+  }
+</script>
