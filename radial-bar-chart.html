@@ -1,0 +1,278 @@
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--  Load d3.js  -->
+  <script src="https://d3js.org/d3.v6.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+</head>
+<body>
+
+	<!-- <svg id="map" width="100%" height="100%" viewBox="-75 0 1050 640" preserveAspectRatio="xMinYMin meet">
+
+  </svg> -->
+  <button type="button" onclick="highlight(1)">Archetypes</button>
+  <button type="button" onclick="highlight(0)">Signals</button>
+  <div id="radialbarContainer">
+    <svg id="radialbarSVG" />
+  </div>
+</body>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+  #radialbarContainer {
+    position: relative;
+  
+    .viz-tooltip {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 400px;
+      width: fit-content;
+    }
+  }
+
+  .linktext {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: regular;
+    stroke-linejoin: round;
+    stroke-width: 3;
+    fill: #1f3d51;
+    pointer-events: none !important;
+  }
+</style>
+<script type="text/javascript">
+  // responsivefy function
+  function responsivefy(svg) {
+    const container = d3.select(svg.node().parentNode),
+          width = parseInt(svg.style('width'), 10),
+          height = parseInt(svg.style('height'), 10),
+          aspect = width / height;
+    svg.attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMinYMid')
+      .call(resize);
+    d3.select(window).on(
+      'resize.' + container.attr('id'),
+      resize
+    );
+    function resize() {
+      const w = parseInt(container.style('width'));
+      svg.attr('width', w);
+      svg.attr('height', Math.round(w / aspect));
+    }
+  }
+
+  // Dimensions change based on window size
+  let innerHeight = 1200;
+  let chartMargin, chartConfig, chartSettings;
+  if (window.innerWidth <= 1024) {
+    // mobile
+    chartMargin = { top: 10, right: 10, bottom: 10, left: 100 };
+    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, barWidth: 0.03, fontsize: 16, barscale: 200};
+
+  } else {
+    // desktop
+    chartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
+    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, barWidth: 0.03, fontsize: 12, barscale: 180};
+  }
+
+  chartSettings = {
+    width: innerWidth + chartMargin.left + chartMargin.right,
+    height: innerHeight + chartMargin.top + chartMargin.bottom,
+  };
+  
+  // The svg
+  let svg = d3.select('#radialbarSVG')
+  .attr('width', chartSettings.width)
+  .attr('height', chartSettings.height)
+  .call(responsivefy);
+
+  // for mobile
+  if (window.innerWidth <= 1024) {
+    radialbar = d3
+      .select('#radialbarSVG')
+      .append('g')
+      .attr('class', 'chart')
+      .attr('transform', `translate(${chartMargin.left}, ${chartMargin.top + innerHeight / 2})`);
+  }
+  // for not mobile
+  else {
+    radialbar = d3
+      .select('#radialbarSVG')
+      .append('g')
+      .attr('class', 'chart')
+      .attr(
+        'transform',
+        `translate(${chartMargin.left + innerWidth / 2}, ${chartMargin.top + innerHeight / 2})`
+      );
+  }
+
+  // Fetch file
+  d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/signals.csv").then(data =>
+  {
+    const nestData = d3.groups(data, d => d['Big themes (5 only)'], (d => d['Themes']));
+    <!-- const nestData = d3.groups(data, d => d['category'], (d => d['type'])); -->
+    const children = [];
+    Object.keys(nestData).forEach(key => {
+      const subchildren = [];
+      const subdata = nestData[key][1];
+
+      Object.keys(subdata).forEach(subkey => {
+        subchildren.push({
+          name: subdata[subkey][0],
+          children: subdata[subkey][1],
+        });
+      });
+
+      children.push({
+        name: nestData[key][0],
+        children: subchildren,
+      });
+    });
+    const nestedNew = {};
+    nestedNew.name = "Signals";
+    nestedNew.children = children;
+    
+    // draw tree
+    const treeData = d3
+    .hierarchy(nestedNew)
+    .sort((a, b) => d3.ascending(a.data.name, b.data.name))
+    <!-- .sum(d => d.size) -->
+    .sum(d => parseInt(d['Count']));
+
+    const radius = Math.min(chartSettings.width, chartSettings.height) * chartConfig.radius;
+    const tree = d3
+      .tree()
+      .size([chartConfig.shape, radius])
+      .separation((a, b) => (a.parent === b.parent ? 1 : chartConfig.separation) / a.depth);
+    const root = tree(treeData);
+
+    // color scale following parent
+    const colorsParent2 = {
+      News: '#7F3C8D',
+      Business: '#11A579',
+      Others: '#E73F74',
+      General: '#4B4B8F',
+      Society: '#E68310',
+      'Social-political': '#CF1C90',
+      Lifestyle: '#F97B72',
+      Political: '#80BA5A',
+    };
+
+    // draw lines
+    radialbar
+      .append('g')
+      .attr('class', 'linklines')
+      .selectAll('path')
+      .data(root.links())
+      .join('path')
+      .attr(
+        'd',
+        d3
+          .linkRadial()
+          .angle(d => d.x)
+          .radius(d => d.y)
+      )
+      .attr('class', d => { 
+        return 'layer-' + d.target.height;
+      })
+      .attr('fill', 'none')
+      .attr('stroke', 'steelblue');
+
+      radialbar
+      .append('g')
+      .attr('class', 'circlegroup')
+      .selectAll('circle')
+      .data(root.descendants())
+      .join('circle')
+      .attr('class', d => `layer-${d.height}`)
+      .attr('transform', d => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`)
+      .attr('r', 3);
+      
+      radialbar
+        .append('g')
+        .attr('class', 'linktext')
+        .attr('font-size', chartConfig.fontsize)
+        .selectAll('text')
+        .data(root.descendants())
+        .join('text')
+        .attr('class', d => `text-${d.height}`)
+        .attr(
+          'transform',
+          d => `
+          rotate(${(d.x * 180) / Math.PI - 90})
+          translate(${d.y},0)
+          rotate(${d.x >= Math.PI ? 180 : 0})
+        `
+        )
+        .attr('id', d => {
+          if (d.height === 2 || d.height === 3) {
+            return d.data.name;
+          }
+          return '';
+        })
+        .attr('dy', '0.31em')
+        .attr('x', d => (d.x < Math.PI === !d.children ? 6 : -6))
+        .attr('text-anchor', d => (d.x < Math.PI === !d.children ? 'start' : 'end'))
+        //.attr('fill', d => colorsParent2[d.data.type] || colorsParent2[d.data.name])
+        .text(d => {
+          if (d.height === 0) {
+            return d.data['Signals'];
+          } else {
+            return d.data.name;
+          }
+        })
+        .clone(true)
+        .lower()
+        .attr('stroke', 'white');
+
+        // scale linear for the arc
+        const scaleY = d3
+          .scaleSymlog()
+          .domain([0, 440])
+          .range([radius + 3, radius + chartConfig.barscale]);
+
+        // Arc function to draw arc bars
+        // x0, x1 don't exist
+        const arc = d3
+          .arc()
+          .startAngle(d => d.x0)
+          .endAngle(d => d.x1)
+          .innerRadius(scaleY(0))
+          .outerRadius(d => scaleY(d.value));
+        
+
+        const bars = root.descendants().filter(d => d.depth === 3); // for two parents
+        bars.forEach((bar, i) => {
+          bars[i].x0 = bars[i].x - chartConfig.barWidth;
+          bars[i].x1 = bars[i].x + chartConfig.barWidth;
+        });
+
+        // Draw bars
+        postBars = radialbar
+          .append('g')
+          .attr('class', 'bars')
+          .lower()
+          .selectAll('path.bars')
+          .data(bars)
+          .join('path')
+          .attr('class', 'bars')
+          .attr('d', arc)
+          .attr('fill', 'maroon')
+  })
+
+  // highlight function
+  // use classed for toggling 
+  function highlight(level) {
+    d3.selectAll('circle.layer-' + level).transition().duration(2000)
+      .attr("fill", 'green');
+
+    d3.selectAll('text.text-' + level).transition().duration(2000)
+    .attr("fill", 'coral');
+
+    d3.selectAll('path.layer-' + level).transition().duration(2000)
+    .attr("stroke", 'goldenrod');
+  }
+</script>

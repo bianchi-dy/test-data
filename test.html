@@ -1,0 +1,77 @@
+radialbar
+.append('g')
+.attr('class', 'circlegroup')
+.selectAll('circle')
+.data(root.descendants())
+.join('circle')
+.attr('class', d => `layer-${d.height}`)
+.attr('transform', d => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`)
+.attr('r', 3);
+
+radialbar
+  .append('g')
+  .attr('class', 'linktext')
+  .attr('font-size', chartConfig.fontsize)
+  .selectAll('text')
+  .data(root.descendants())
+  .join('text')
+  .attr('class', d => `text-${d.height}`)
+  .attr(
+    'transform',
+    d => `
+    rotate(${(d.x * 180) / Math.PI - 90})
+    translate(${d.y},0)
+    rotate(${d.x >= Math.PI ? 180 : 0})
+  `
+  )
+  .attr('id', d => {
+    if (d.height === 2 || d.height === 3) {
+      return d.data.name;
+    }
+    return '';
+  })
+  .attr('dy', '0.31em')
+  .attr('x', d => (d.x < Math.PI === !d.children ? 6 : -6))
+  .attr('text-anchor', d => (d.x < Math.PI === !d.children ? 'start' : 'end'))
+  //.attr('fill', d => colorsParent2[d.data.type] || colorsParent2[d.data.name])
+  .text(d => d.data.name)
+  .clone(true)
+  .lower()
+  .attr('stroke', 'white');
+
+// draw barscale
+// scale linear for the arc
+const scaleY = d3
+  .scaleSymlog()
+  // .scaleLinear()
+  .domain([0, 440])
+  .range([radius + 3, radius + chartConfig.barscale]);
+
+// Arc function to draw arc bars
+const arc = d3
+  .arc()
+  .startAngle(d => d.x0)
+  .endAngle(d => d.x1)
+  .innerRadius(scaleY(0))
+  .outerRadius(d => scaleY(d.value));
+
+// const bars = root.descendants().filter(d => d.depth === 2); // for one parent
+const bars = root.descendants().filter(d => d.depth === 3); // for two parents
+
+bars.forEach((bar, i) => {
+  bars[i].x0 = bars[i].x - chartConfig.barWidth;
+  bars[i].x1 = bars[i].x + chartConfig.barWidth;
+});
+
+// Draw bars
+postBars = radialbar
+  .append('g')
+  .attr('class', 'bars')
+  .lower()
+  .selectAll('path.bars')
+  .data(bars)
+  .join('path')
+  .attr('class', 'bars')
+  .attr('d', arc)
+  .attr('fill', 'coral')
+  //.attr('fill', d => colorsParent2[d.parent.data.name]); // colour by subparent category
