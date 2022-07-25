@@ -53,9 +53,10 @@
 
   };
   
-  d3.json("https://raw.githubusercontent.com/bianchi-dy/test-data/main/test-data.json").then((data) => {
-    console.log(data); // [{"Hello": "world"}, …]
-  });
+  d3.json("https://raw.githubusercontent.com/bianchi-dy/test-data/main/test-data.json").then(function (data, error) {
+      console.log(data);
+    }
+  )
   // for (let i = 0; i < 10; i +=1) {
   //   var div = document.createElement('div');
   //   d3.select(".swiper-wrapper").append('div').attr('class', 'swiper-slide').html(
