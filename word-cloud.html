@@ -4,15 +4,31 @@
 
 <!-- Load d3.js -->
 <script src="https://d3js.org/d3.v6.js"></script>
-
 <!-- Load d3-cloud -->
 <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
+
+<!-- resize script -->
+<!-- <script src="src/ResizeSensor.js"></script>
+<script src="src/ElementQueries.js"></script> -->
 
 <!-- Create a div where the graph will take place -->
 <div id="wordcloud"></div>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+  #wordCloud {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    height: 400px;
+  }
+
+  #wordCloud svg {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 </style>
 <script type="text/javascript">
   // responsivefy function
@@ -40,44 +56,72 @@
   let chartMargin, chartConfig, chartSettings;
   if (window.innerWidth <= 1024) {
     // mobile
-    chartMargin = { top: 10, right: 10, bottom: 10, left: 100 };
-    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, barWidth: 0.03, fontsize: 16, barscale: 200};
+    chartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
+    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, fontsize: 16, barscale: 200};
 
   } else {
     // desktop
-    chartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
-    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, barWidth: 0.03, fontsize: 12, barscale: 180};
+    chartMargin = { top: 100, right: 100, bottom: 100, left: 100 };
+    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, fontsize: 12, barscale: 180};
   }
 
   chartSettings = {
-    width: innerWidth + chartMargin.left + chartMargin.right,
+    width:  window.innerWidth - chartMargin.left - chartMargin.right,
     height: innerHeight + chartMargin.top + chartMargin.bottom,
   };
 
 
   // append the svg object to the body of the page
-  var svg = d3.select("#wordcloud").attr("style", "background-color:#23548A;").append("svg")
+  var svg = d3.select("#wordcloud").attr("style", "background-color:#222020;").append("svg")
       .attr("width", chartSettings.width - chartMargin.left - chartMargin.right)
       .attr("height", chartSettings.height - chartMargin.top - chartMargin.bottom)
+      .call(responsivefy)
     .append("g")
-      .attr("transform",
-            "translate(" + chartMargin.left + "," + chartMargin.top + ")");
+      // .attr("transform",
+      //       "translate(" + chartMargin.left + "," + chartMargin.top + ")");
 
   // List of words
-  // var myWords = [{word: "Running", size: "10"}, {word: "Surfing", size: "20"}, {word: "Climbing", size: "50"}, {word: "Kiting", size: "30"}, {word: "Sailing", size: "20"}, {word: "Snowboarding", size: "60"} ]
-  var myWords = d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/signals.csv").then(data =>
+  var myWords = d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/data/signals-counted-wordcloud.csv").then(data =>
   {
     let words = [];
     data.map(d => words.push({word: d['Signals'], size: parseInt(d['Count'])}));
+    words = words.sort(function (a, b) {
+        return parseFloat(b['size']) - parseFloat(a['size'])
+      });
+
+    let extent = d3.extent(words.map(r => r['size']));
+    // TODO change word size based on window size
+    let fontSizeScale = d3.scaleSymlog().domain(extent)
+    
+    if (window.screen.width <= 425) {
+      words = words.slice(0, words.length/4)
+      extent = d3.extent(words.map(r => r['size']));
+      fontSizeScale.domain(extent).range([14, 40])
+    } else {
+      words = words.slice(0, words.length/3)
+      extent = d3.extent(words.map(r => r['size']));
+      fontSizeScale.domain(extent).range([14, 50])
+    }
+    //TODO change alignment based on window size
+    // CODE
+    const x1 = -90;
+    const x2 = 90;
+    const n = 3;
+    const multiplier = ((Math.abs(x1) + Math.abs(x2)) / (n - 1)) || 1
+    const a = n;
+    const b = x1/multiplier;
+    const c = multiplier;
 
     // Constructs a new cloud layout instance. It run an algorithm to find the position of words that suits your requirements
     // Wordcloud features that are different from one word to the other must be here
     var layout = d3.layout.cloud()
-      .size([chartSettings.width, chartSettings.height])
+      .size([chartSettings.width - chartMargin.left - chartMargin.right, chartSettings.height - chartMargin.top - chartMargin.bottom])
       .words(words.map(function(d) { return {text: d.word, size:d.size}; }))
-      .padding(5)        //space between words
-      .rotate(function() { return ~~(Math.random() * 2) * 0; })
-      .fontSize(function(d) { return d.size; })      // font size of words
+      .padding(fontSizeScale.range()[1]/4.5)        //space between words
+      .rotate(0)
+      //.rotate(() => { return (~~(Math.random() * a) + b) * c })
+      .fontSize(d => fontSizeScale(d.size))      // font size of words
+      .spiral('archimedean')
       .on("end", draw);
     layout.start();
 
@@ -105,27 +149,27 @@
       .attr("stop-color", "#D8DCC4")
       .attr("stop-opacity", 1);
 
-      svg
+      const text = svg
         .append("g")
           .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
           .selectAll("text")
             .data(words)
           .enter().append("text")
-            .style("font-size", function(d) { return d.size; })
+            // .style("font-size", function(d) { return d.size; })
+            .attr('font-size', 1)
             .style("fill", "url(#svgGradient)")
             .attr("text-anchor", "middle")
             .style("font-family", "Space Grotesk")
             .attr("transform", function(d) {
               return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
             })
-            .text(function(d) { return d.text; });
+
+      text.transition()
+        .duration(3000)
+        .attr('transform', (d) => { return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')' })
+        .style("font-size", function(d) { return d.size + "px"; })
+        .text(d => d.text);
     }
   });
-  // // set the dimensions and margins of the graph
-  // var margin = {top: 10, right: 10, bottom: 10, left: 10},
-  //     width = 450 - margin.left - margin.right,
-  //     height = 450 - margin.top - margin.bottom;
-
-
 
   </script>

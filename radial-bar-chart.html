@@ -70,12 +70,12 @@
   if (window.innerWidth <= 1024) {
     // mobile
     chartMargin = { top: 10, right: 10, bottom: 10, left: 100 };
-    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, barWidth: 0.03, fontsize: 16, barscale: 200};
+    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, barWidth: 0.015, fontsize: 16, barscale: 200};
 
   } else {
     // desktop
     chartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
-    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, barWidth: 0.03, fontsize: 12, barscale: 180};
+    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, barWidth: 0.01, fontsize: 12, barscale: 180};
   }
 
   chartSettings = {
@@ -88,6 +88,47 @@
   .attr('width', chartSettings.width)
   .attr('height', chartSettings.height)
   .call(responsivefy);
+
+  var defs = svg.append("defs");
+
+  var gradient = defs.append("linearGradient")
+      .attr("id", "svgGradient")
+      .attr("x1", "0%")
+      .attr("x2", "0%")
+      .attr("y1", "0%")
+      .attr("y2", "100%");
+
+  gradient.append("stop")
+  .attr("class", "start")
+  .attr("offset", "0%")
+  .attr("stop-color", "#D8DCC4")
+  .attr("stop-opacity", 1);
+
+  gradient.append("stop")
+  .attr("class", "end")
+  .attr("offset", "100%")
+  .attr("stop-color", "#6B6397")
+  .attr("stop-opacity", 1);
+
+  var gradientHighlight = defs.append("linearGradient")
+  .attr("id", "highlightGradient")
+  .attr("x1", "0%")
+  .attr("x2", "0%")
+  .attr("y1", "0%")
+  .attr("y2", "100%");
+
+  gradientHighlight.append("stop")
+  .attr("class", "start")
+  .attr("offset", "0%")
+  .attr("stop-color", "#CA7761")
+  .attr("stop-opacity", 1);
+
+  gradientHighlight.append("stop")
+  .attr("class", "end")
+  .attr("offset", "100%")
+  .attr("stop-color", "#7BA3E0")
+  .attr("stop-opacity", 1);
+
 
   // for mobile
   if (window.innerWidth <= 1024) {
@@ -113,7 +154,7 @@
   d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/signals.csv").then(data =>
   {
     const nestData = d3.groups(data, d => d['Big themes (5 only)'], (d => d['Themes']));
-    <!-- const nestData = d3.groups(data, d => d['category'], (d => d['type'])); -->
+
     const children = [];
     Object.keys(nestData).forEach(key => {
       const subchildren = [];
@@ -149,18 +190,6 @@
       .separation((a, b) => (a.parent === b.parent ? 1 : chartConfig.separation) / a.depth);
     const root = tree(treeData);
 
-    // color scale following parent
-    const colorsParent2 = {
-      News: '#7F3C8D',
-      Business: '#11A579',
-      Others: '#E73F74',
-      General: '#4B4B8F',
-      Society: '#E68310',
-      'Social-political': '#CF1C90',
-      Lifestyle: '#F97B72',
-      Political: '#80BA5A',
-    };
-
     // draw lines
     radialbar
       .append('g')
@@ -179,100 +208,148 @@
         return 'layer-' + d.target.height;
       })
       .attr('fill', 'none')
-      .attr('stroke', 'steelblue');
-
-      radialbar
+      .attr('stroke', '#6B6397');
+    
+    // draw circles
+    radialbar
       .append('g')
       .attr('class', 'circlegroup')
       .selectAll('circle')
       .data(root.descendants())
       .join('circle')
       .attr('class', d => `layer-${d.height}`)
+      .style("fill", "url(#svgGradient)")
       .attr('transform', d => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`)
-      .attr('r', 3);
+      .attr('r', d => d.height === 0 ? 0 : 6)
+      .attr('stroke', 'white');
       
-      radialbar
-        .append('g')
-        .attr('class', 'linktext')
-        .attr('font-size', chartConfig.fontsize)
-        .selectAll('text')
-        .data(root.descendants())
-        .join('text')
-        .attr('class', d => `text-${d.height}`)
-        .attr(
-          'transform',
-          d => `
-          rotate(${(d.x * 180) / Math.PI - 90})
-          translate(${d.y},0)
-          rotate(${d.x >= Math.PI ? 180 : 0})
-        `
-        )
-        .attr('id', d => {
-          if (d.height === 2 || d.height === 3) {
-            return d.data.name;
-          }
+      // scale linear for the arc
+      const scaleY = d3
+        .scaleSymlog()
+        .domain([0, 440])
+        .range([radius + 3, radius + chartConfig.barscale]);
+
+    radialbar
+      .append('g')
+      .attr('class', 'linktext')
+      .attr('font-size', chartConfig.fontsize)
+      .selectAll('text')
+      .data(root.descendants())
+      .join('text')
+      .attr('class', d => `text-${d.height}`)
+      .attr('id', d => {
+        if (d.height === 2 || d.height === 3) {
+          return d.data.name;
+        }
+        return '';
+      })
+      .attr(
+        'transform',
+        d => `
+        rotate(${(d.x * 180) / Math.PI - 90})
+        translate(${d.y},0)
+        rotate(${d.x >= Math.PI ? 180 : 0})
+      `
+      )
+      .attr('dy', '0.3em')
+      .attr('x', d =>  d.x < Math.PI === !d.children ? 6 : -6)
+      .attr('text-anchor', d => (d.x < Math.PI === !d.children ? 'start' : 'end'))
+      .text(d => {
+        if (d.height === 0) {
           return '';
-        })
-        .attr('dy', '0.31em')
-        .attr('x', d => (d.x < Math.PI === !d.children ? 6 : -6))
-        .attr('text-anchor', d => (d.x < Math.PI === !d.children ? 'start' : 'end'))
-        //.attr('fill', d => colorsParent2[d.data.type] || colorsParent2[d.data.name])
-        .text(d => {
-          if (d.height === 0) {
-            return d.data['Signals'];
-          } else {
-            return d.data.name;
-          }
-        })
-        .clone(true)
-        .lower()
-        .attr('stroke', 'white');
+        } else {
+          return d.data.name;
+        }
+      })
+      .clone(true)
+      .lower()
+      .attr('stroke', 'white');
 
-        // scale linear for the arc
-        const scaleY = d3
-          .scaleSymlog()
-          .domain([0, 440])
-          .range([radius + 3, radius + chartConfig.barscale]);
+    // Arc function to draw arc bars
+    // x0, x1 don't exist
+    const arc = d3
+      .arc()
+      .startAngle(d => d.x0)
+      .endAngle(d => d.x1)
+      .innerRadius(scaleY(0))
+      .outerRadius(d => scaleY(d.value));
+      
 
-        // Arc function to draw arc bars
-        // x0, x1 don't exist
-        const arc = d3
-          .arc()
-          .startAngle(d => d.x0)
-          .endAngle(d => d.x1)
-          .innerRadius(scaleY(0))
-          .outerRadius(d => scaleY(d.value));
-        
+    const bars = root.descendants().filter(d => d.depth === 3); // for two parents
+    bars.forEach((bar, i) => {
+      bars[i].x0 = bars[i].x - chartConfig.barWidth;
+      bars[i].x1 = bars[i].x + chartConfig.barWidth;
+    });
+    // Draw bars
+    postBars = radialbar
+      .append('g')
+      .attr('class', 'bars')
+      .lower()
+      .selectAll('path.bars')
+      .data(bars)
+      .join('path')
+      .attr('class', 'bars')
+      .attr('d', arc)
+      .attr('fill', '#6B6397');
 
-        const bars = root.descendants().filter(d => d.depth === 3); // for two parents
-        bars.forEach((bar, i) => {
-          bars[i].x0 = bars[i].x - chartConfig.barWidth;
-          bars[i].x1 = bars[i].x + chartConfig.barWidth;
-        });
-
-        // Draw bars
-        postBars = radialbar
-          .append('g')
-          .attr('class', 'bars')
-          .lower()
-          .selectAll('path.bars')
-          .data(bars)
-          .join('path')
-          .attr('class', 'bars')
-          .attr('d', arc)
-          .attr('fill', 'maroon')
+    // Draw text at end of bars; Signals only
+    radialbar
+      .append('g')
+      .attr('class', 'linktext')
+      .attr('font-size', chartConfig.fontsize - 2)
+      .selectAll('text')
+      .data(bars)
+      .join('text')
+      .attr('class', 'text-0')
+      .attr('id', d => {
+        if (d.height === 2 || d.height === 3) {
+          return d.data.name;
+        }
+        return '';
+      })
+      .attr(
+        'transform',
+        d => `
+        rotate(${(d.x * 180) / Math.PI - 90})
+        translate(${d.y},0)
+        rotate(${d.x >= Math.PI ? 180 : 0})
+      `
+      )
+      .attr('dy', '0.3em')
+      .attr('x', 10)
+      .attr('text-anchor', d => (d.x < Math.PI === !d.children ? 'start' : 'end'))
+      .text(d => d.data.Signals)
+      .clone(true)
+      .lower()
+      .attr('stroke', 'white');
   })
 
   // highlight function
   // use classed for toggling 
   function highlight(level) {
-    d3.selectAll('circle.layer-' + level).transition().duration(2000)
-      .attr("fill", 'green');
+    let d = 1000;
+    d3.selectAll('circle').transition().duration(d)
+    .style("fill", "url(#svgGradient)")
 
-    d3.selectAll('text.text-' + level).transition().duration(2000)
-    .attr("fill", 'coral');
+    d3.selectAll('path').transition().duration(d)
+    .attr("stroke", '#6B6397');
 
-    d3.selectAll('path.layer-' + level).transition().duration(2000)
-    .attr("stroke", 'goldenrod');
+    d3.selectAll('circle.layer-' + level).transition().duration(d)
+    .style("fill", "url(#highlightGradient)")
+
+    d3.selectAll('path.layer-' + level).transition().duration(d)
+    .attr("stroke", '#CA7761');
+  }
+
+  //since "onClicked is disabled add this script and an attribute"
+  window.onload = function() {
+    var anchors = document.getElementsByTagName('*');
+    for(var i = 0; i < anchors.length; i++) {
+      var anchor = anchors[i];
+      anchor.onclick = function() {
+        code = this.getAttribute('clickTree');
+        eval(code);   
+      }
+    }
   }
 </script>

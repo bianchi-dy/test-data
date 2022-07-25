@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8" />
+  <title>Swiper demo</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"
+  />
+  <!-- Link Swiper's CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/swiper/swiper-bundle.min.css"
+  />
+  <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://d3js.org/d3.v6.js"></script>
+</head>
+
+<!-- Demo styles -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+  .swiper {
+    width: 340px;
+    /* height: 320px; */
+  }
+
+  .swiper-slide {
+    font-family: 'Space Grotesk', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 18px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #fff;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+</style>
+
+<body>
+  <!-- Swiper -->
+  <div class="swiper mySwiper">
+    <div class="swiper-wrapper">
+    </div>
+  </div>
+
+  <!-- Swiper JS -->
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+</body>
+<!-- Initialize Swiper -->
+<script>
+  function generateHTML(obj) {
+
+  };
+  
+  d3.json("./test-data.json").then((data) => {
+    console.log(data); // [{"Hello": "world"}, …]
+  });
+  // for (let i = 0; i < 10; i +=1) {
+  //   var div = document.createElement('div');
+  //   d3.select(".swiper-wrapper").append('div').attr('class', 'swiper-slide').html(
+  //     `
+  //     <div class="flex justify-center">
+  //       <div class="block p-6 bg-white max-w-sm">
+  //         <img class="w-full bg-cover" src="https://3.bp.blogspot.com/-Chu20FDi9Ek/WoOD-ehQ29I/AAAAAAAAK7U/mc4CAiTYOY8VzOFzBKdR52aLRiyjqu0MwCLcBGAs/s1600/DSC04596%2B%25282%2529.JPG">
+  //         <h5 class="text-gray-900 text-xl leading-tight font-medium mb-2">Job title</h5>
+  //         <p class="text-gray-700 text-base mb-4">
+  //           Product Manager
+  //         </p>
+  //         <p  class="inline-block px-4 py-2 mb-8 bg-gray-300 text-black text-xs leading-tight uppercase rounded">Collapse</p>
+  //         <h5 class="text-gray-900 text-xl leading-tight font-medium mb-2">Card title</h5>
+  //         <p class="text-gray-700 text-base mb-4">
+  //           This person is trying hard to secure the resources they need to support compassionate “grey areas” of citizens' needs. Even as resources are increasingly scarce, there is a pressing and urgent need to triage and prioritise where governments invest, and the rules and policies that govern the distribution of these resources.
+
+  //           With a range of daily problems, requests and complaints streaming into the government every day, somebody has to make sense of how to group, prioritise and tackle these problems. Every team within the government has its own limited resources and constraints. There is a need to coopt the attention and interest of these other teams with the promise of a good outcome.
+
+  //           Good outcomes are defined by their ability to contribute to measurable citizen satisfaction, and to positive affect towards civic services. A range of guerilla Robin Hood-style community organisations have sprung up, with the nimbleness to speedily tackle problems and break the rules to make quick fixes. One of your personal beliefs is that their engagement is vital to helping to solve some of the issues that are coming up. You’re keen to understand how these partnerships might happen, and open to doing so quietly and experimentally.
+
+  //           Another pattern that is providing hope is increased ability for frugal innovation and ground-up efforts at scrounging and recycling existing resources. You wonder if there is a way to open-source some of the existing “dead systems” and abandoned code that exists within the government, so that independents can make use of this “waste” infrastructure.
+  //         </p>
+  //         <h5 class="text-gray-900 text-xl leading-tight font-medium mb-2">Card title</h5>
+  //         <p class="text-gray-700 text-base mb-4">
+  //           Some quick example text to build on the card title and make up the bulk of the card's
+  //           content.
+  //         </p>
+  //         <h5 class="text-gray-900 text-xl leading-tight font-medium mb-2">Card title</h5>
+  //         <p class="text-gray-700 text-base mb-4">
+  //           Some quick example text to build on the card title and make up the bulk of the card's
+  //           content.
+  //         </p>
+  //       </div>
+  //     </div>
+  //     `
+  //   );
+  // }
+
+  var swiper = new Swiper(".mySwiper", {
+    effect: "cards",
+    grabCursor: true,
+    loop: true,
+    keyboard: true,
+  });
+</script>
