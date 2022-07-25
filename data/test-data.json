@@ -1,5 +1,5 @@
 {
-  "data": [{"img": "/images/img1.png",
+  "data": [{"img": "images/img1.png",
    "scenario": "Collapse",
    "jobtitle": "Product Manager",
    "jobdesc": ["This person is alone, sitting on a chair. Content displayed on screens float through the air all around her. She doesn't move, but the data being displayed changes along with her thoughts. She hears other voices in her head. They are other people interacting with her thoughts, which are automatically categorised and summarised as the exchange of thought continues."],
