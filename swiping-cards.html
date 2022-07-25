@@ -107,7 +107,7 @@
     return text0 + text1 + text2 + text3 + text4 + `</div></div>`
   };
   
-  d3.json("https://raw.githubusercontent.com/bianchi-dy/test-data/main/test-data.json").then(function (data, error) {
+  d3.json("https://raw.githubusercontent.com/bianchi-dy/test-data/main/data/test-data.json").then(function (data, error) {
       for (let i in data['data']) {
         let obj = data['data'][i];
         var div = document.createElement('div');
