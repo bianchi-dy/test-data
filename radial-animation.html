@@ -1,0 +1,296 @@
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--  Load d3.js  -->
+  <script src="https://d3js.org/d3.v6.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+</head>
+<body>
+  <div id="radialbarContainer">
+    <svg id="radialbarSVG" />
+  </div>
+</body>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+  #radialbarContainer {
+    position: relative;
+  
+    .viz-tooltip {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 400px;
+      width: fit-content;
+    }
+  }
+
+  .linktext {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: regular;
+    stroke-linejoin: round;
+    stroke-width: 3;
+    fill: #1f3d51;
+    pointer-events: none !important;
+  }
+</style>
+<script type="text/javascript">
+  // responsivefy function
+  function responsivefy(svg) {
+    const container = d3.select(svg.node().parentNode),
+          width = parseInt(svg.style('width'), 10),
+          height = parseInt(svg.style('height'), 10),
+          aspect = width / height;
+    svg.attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMinYMid')
+      .call(resize);
+    d3.select(window).on(
+      'resize.' + container.attr('id'),
+      resize
+    );
+    function resize() {
+      const w = parseInt(container.style('width'));
+      svg.attr('width', w);
+      svg.attr('height', Math.round(w / aspect));
+    }
+  }
+
+  // Dimensions change based on window size
+  let innerHeight = 1200;
+  let chartMargin, chartConfig, chartSettings;
+  if (window.innerWidth <= 1024) {
+    // mobile
+    chartMargin = { top: 10, right: 10, bottom: 10, left: 100 };
+    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, barWidth: 0.015, fontsize: 16, barscale: 200};
+
+  } else {
+    // desktop
+    chartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
+    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, barWidth: 0.01, fontsize: 12, barscale: 180};
+  }
+
+  chartSettings = {
+    width: innerWidth + chartMargin.left + chartMargin.right,
+    height: innerHeight + chartMargin.top + chartMargin.bottom,
+  };
+  
+  // The svg
+  let svg = d3.select('#radialbarSVG')
+  .attr('width', chartSettings.width)
+  .attr('height', chartSettings.height)
+  .call(responsivefy);
+
+  var defs = svg.append("defs");
+
+  var gradient = defs.append("linearGradient")
+      .attr("id", "svgGradient")
+      .attr("x1", "0%")
+      .attr("x2", "0%")
+      .attr("y1", "0%")
+      .attr("y2", "100%");
+
+  gradient.append("stop")
+  .attr("class", "start")
+  .attr("offset", "0%")
+  .attr("stop-color", "#D8DCC4")
+  .attr("stop-opacity", 1);
+
+  gradient.append("stop")
+  .attr("class", "end")
+  .attr("offset", "100%")
+  .attr("stop-color", "#6B6397")
+  .attr("stop-opacity", 1);
+
+  var gradientHighlight = defs.append("linearGradient")
+  .attr("id", "highlightGradient")
+  .attr("x1", "0%")
+  .attr("x2", "0%")
+  .attr("y1", "0%")
+  .attr("y2", "100%");
+
+  gradientHighlight.append("stop")
+  .attr("class", "start")
+  .attr("offset", "0%")
+  .attr("stop-color", "#CA7761")
+  .attr("stop-opacity", 1);
+
+  gradientHighlight.append("stop")
+  .attr("class", "end")
+  .attr("offset", "100%")
+  .attr("stop-color", "#7BA3E0")
+  .attr("stop-opacity", 1);
+
+  // for mobile
+  if (window.innerWidth <= 1024) {
+    radialbar = d3
+      .select('#radialbarSVG')
+      .append('g')
+      .attr('class', 'chart')
+      .attr('transform', `translate(${chartMargin.left}, ${chartMargin.top + innerHeight / 2})`);
+  }
+  // for not mobile
+  else {
+    radialbar = d3
+      .select('#radialbarSVG')
+      .append('g')
+      .attr('class', 'chart')
+      .attr(
+        'transform',
+        `translate(${chartMargin.left + innerWidth / 2}, ${chartMargin.top + innerHeight / 2})`
+      );
+  };
+
+  var i = 0,
+	duration = 750,
+	root;
+
+  const radius = Math.min(chartSettings.width, chartSettings.height) * chartConfig.radius;
+  const tree = d3
+    .tree()
+    .size([chartConfig.shape, radius])
+    .separation((a, b) => (a.parent === b.parent ? 1 : chartConfig.separation) / a.depth);
+
+  const arc = d3
+    .arc()
+    .startAngle(d => d.x0)
+    .endAngle(d => d.x1)
+    .innerRadius(scaleY(0))
+    .outerRadius(d => scaleY(d.value));
+
+  // Fetch file
+  d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/signals.csv").then(data =>
+  {
+    console.log('$$$')
+    const nestData = d3.groups(data, d => d['Big themes (5 only)'], (d => d['Themes']));
+
+    const children = [];
+    Object.keys(nestData).forEach(key => {
+      const subchildren = [];
+      const subdata = nestData[key][1];
+
+      Object.keys(subdata).forEach(subkey => {
+        subchildren.push({
+          name: subdata[subkey][0],
+          children: subdata[subkey][1],
+        });
+      });
+
+      children.push({
+        name: nestData[key][0],
+        children: subchildren,
+      });
+    });
+    const nestedNew = {};
+    nestedNew.name = "Signals";
+    nestedNew.children = children;
+    
+    // draw tree
+    const treeData = d3
+    .hierarchy(nestedNew)
+    .sort((a, b) => d3.ascending(a.data.name, b.data.name))
+    <!-- .sum(d => d.size) -->
+    .sum(d => parseInt(d['Count']));
+
+    const radius = Math.min(chartSettings.width, chartSettings.height) * chartConfig.radius;
+    const tree = d3
+      .tree()
+      .size([chartConfig.shape, radius])
+      .separation((a, b) => (a.parent === b.parent ? 1 : chartConfig.separation) / a.depth);
+    const root = tree(treeData);
+
+
+    update(root);
+    
+  })
+
+
+  function update(source) {
+
+    // Compute the new tree layout.
+    var nodes = tree.nodes(root).reverse(),
+      links = tree.links(nodes);
+  
+    // Normalize for fixed-depth.
+    nodes.forEach(function(d) { d.y = d.depth * 180; });
+  
+    // Update the nodes…
+    var node = svg.selectAll("g.node")
+      .data(nodes, function(d) { return d.id || (d.id = ++i); });
+  
+    // Enter any new nodes at the parent's previous position.
+    var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+      // .on("click", click);
+  
+    nodeEnter.append("circle")
+      .attr("r", 1e-6)
+      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+  
+    nodeEnter.append("text")
+      .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+      .text(function(d) { return d.name; })
+      .style("fill-opacity", 1e-6);
+  
+    // Transition nodes to their new position.
+    var nodeUpdate = node.transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+  
+    nodeUpdate.select("circle")
+      .attr("r", 10)
+      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+  
+    nodeUpdate.select("text")
+      .style("fill-opacity", 1);
+  
+    // Transition exiting nodes to the parent's new position.
+    var nodeExit = node.exit().transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+      .remove();
+  
+    nodeExit.select("circle")
+      .attr("r", 1e-6);
+  
+    nodeExit.select("text")
+      .style("fill-opacity", 1e-6);
+  
+    // Update the links…
+    var link = svg.selectAll("path.link")
+      .data(links, function(d) { return d.target.id; });
+  
+    // Enter any new links at the parent's previous position.
+    link.enter().insert("path", "g")
+      .attr("class", "link")
+      .attr("d", function(d) {
+      var o = {x: source.x0, y: source.y0};
+      return arc({source: o, target: o});
+      });
+  
+    // Transition links to their new position.
+    link.transition()
+      .duration(duration)
+      .attr("d", arc);
+  
+    // Transition exiting nodes to the parent's new position.
+    link.exit().transition()
+      .duration(duration)
+      .attr("d", function(d) {
+      var o = {x: source.x, y: source.y};
+      return arc({source: o, target: o});
+      })
+      .remove();
+  
+    // Stash the old positions for transition.
+    nodes.forEach(function(d) {
+    d.x0 = d.x;
+    d.y0 = d.y;
+    });
+  }
+</script>

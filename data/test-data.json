@@ -37,10 +37,60 @@
     "jobreason": ["Sources of food and fresh produce have become very limited due to the change in climate, naturally reducing the number of tastes/flavours/smells that exists. On top of being a form of sustenance, food is still a huge vehicle for reflecting culture and transcending emotions. As such, there is a need to research ways to preserve or elevate flavour and taste experiences."],
     "jobmetaphor": ["Life is like a box of chocolates"]},
   {"img": "img6.png",
-    "scenario": "Discipline",
+    "scenario": "Growth",
     "jobtitle": "Humentor (human-mentor)",
     "jobdesc": ["Co-facilitator with AI counterparts in highly personalized learning journeys for global citizens."],
     "jobreason": ["Symbiotic integration of humans and computers where learning is not anymore about learning lexical knowledge, but guiding empathetic futures."],
     "jobmetaphor": ["New era of augmented (virtual/biological) explorations"]
-  }]
+  },
+  {"img": "img7.png",
+    "scenario": "Transformation",
+    "jobtitle": "Behavioural Architect",
+    "jobdesc": ["She is sifting through and reviewing relevant user data flagged by their AI system, and fine tuning/implementing the recommendations made by the AI system to nudge their user's behaviour in their desired direction."],
+    "jobreason": ["To escape a doomsday scenario, humanity needs to collectively move in the same direction so that we can effectively cut down emissions, avoid social conflict and move collectively towards solving pressing social problems. Government agencies are making use of design and an understanding of human behavioural psychology to nudge behaviours through the services that they provide (of course this also means that companies can use this to their own advantage)."],
+    "jobmetaphor": ["The Truman Show"]
+  },
+  {"img": "img8.png",
+    "scenario": "Transformation",
+    "jobtitle": "Network Designer",
+    "jobdesc": ["I am working on a network that governs the city I live in, in which the government uses crowdsourced data to enact decisions. But these decisions are a collective agreement from all who live in the city, collected through a new technology that allows them to all participate."],
+    "jobreason": ["People are more outspoken about how they want to be governed, and there is demand for more citizen participation. Travel is more fluid. With big group data, one can identify various groups they would feel more attuned to. People naturally herd together with like minded folk."],
+    "jobmetaphor": ["Collective data makes a collective decision"]
+  },
+  {"img": "img9.png",
+    "scenario": "Transformation",
+    "jobtitle": "Bridger - bridging the people who are lacking behind to the better parts of the world",
+    "jobdesc": ["This person is travelling to another part of the world where people do not have access to clean water, food and clean air. The disparity between this countries’ economic status and its neighbours has led to its civilians bearing the forefront of such effects. This person and her company are trying to help the people of this part of the world. But not through volunteering like they do in humanitarian aid, but more of finding an effective solution that could tide them through such tough times."],
+    "jobreason": ["The disparity in the world has become worse than it is now. And humans realise that it takes everyone’s effort to make this world liveable again and everyone is now playing a part. Funding is given by the big players that has gotten ahead in the race. They realise they need everyone in order to maintain their hold of the top positions."],
+    "jobmetaphor": ["Ecosystem"]
+  },
+  {"img": "img10.png",
+    "scenario": "Transformation",
+    "jobtitle": "Resource Manager",
+    "jobdesc": ["This person is in a sterile environment with only 2 or 3 others around. The clients he's working with are disabled but very capable. It makes me wonder what has happened to persons with disabilities who are not as capable or lower-functioning."],
+    "jobreason": ["Everyone is judged in terms of their level of contribution to society & the economy. Those who aren't able to keep up or pull their weight are not welcome in such a world. It's a tough but necessary and calculated reality. As such, some others are required to oversee operational aspects to ensure productivity and efficiency."],
+    "jobmetaphor": ["You are what you give"]
+  },
+  {"img": "img11.png",
+    "scenario": "Transformation",
+    "jobtitle": "VM for hire",
+    "jobdesc": ["Hired by multiple tech companies to build and retain their community of users. Likely mode of engagement is through VR/AR/metaverse platforms."],
+    "jobreason": ["People, organisations, and communities are fragmented/dispersed because of the increasing amounts of time that the world is spending on tech platforms, and this job exists to re-connect them."],
+    "jobmetaphor": ["Magnet"]
+  },
+  {"img": "img12.png",
+    "scenario": "Transformation",
+    "jobtitle": "Leisure Crafter",
+    "jobdesc": ["Work is fun and engaging."],
+    "jobreason": ["Mundane, labour intensive work and bullshit jobs are redundant. People are universally given a living allowance on the basis of their age and needs, which liberates them to engage in whatever meaningful activities that inspire and motivate them. They can choose to immerse themselves in their chosen vocation or to spend their time in leisure. The demand for meaningful and engaging leisure activities peaks. The corresponding demand for leisure crafters similarly peaks; their vocation is to design meaningful and engaging activities for leisure."],
+    "jobmetaphor": ["Life is a role-playing game"]
+  },
+  {"img": "img13.png",
+    "scenario": "Transformation",
+    "jobtitle": "Reality Management Strategist",
+    "jobdesc": ["He’s starting up his devices to read the news of the day - every article is being processed through powerful filters that immediately let him know what’s true and what’s false. Grey area articles - he does a quick scan that lets him track in quick time where the data is sourced from and who is behind it."],
+    "jobreason": ["It’s a real pain point what is true and what is false. It leads to crippling bad decision making and corporates and institutions are willing to pay top consultants to stage reality interventions. Kind of like the movie Inception but not dreams."],
+    "jobmetaphor": ["Prisms of Propaganda"]
+  }
+]
 }
