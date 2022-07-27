@@ -113,6 +113,7 @@
   };
   
   d3.json("https://raw.githubusercontent.com/bianchi-dy/test-data/main/data/test-data.json").then(function (data, error) {
+      console.log(data['data'].length)
       for (let i in data['data']) {
         let obj = data['data'][i];
         var div = document.createElement('div');
@@ -128,7 +129,6 @@
     keyboard: true,
     grabCursor: true,
     slidesPerView: 1,
-	  autoplay: { delay: 5000 },
     spaceBetween: 30,
     loop: true,
     navigation: {
