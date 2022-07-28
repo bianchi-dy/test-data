@@ -51,34 +51,38 @@
     }
   }
 
+  // first load;
+  let wFirstView = true;
+
   // Dimensions change based on window size
-  let innerHeight = window.innerHeight;
-  let chartMargin, chartConfig, chartSettings;
+  let wInnerHeight = window.wInnerHeight;
+  let wChartMargin, wChartConfig, wChartSettings;
   if (window.innerWidth <= 1024) {
     // mobile
-    chartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
-    chartConfig = {radius: 0.6, separation: 1, shape: Math.PI, fontsize: 16, barscale: 200};
+    wChartMargin = { top: 20, right: 20, bottom: 20, left: 20 };
+    wChartConfig = {radius: 0.6, separation: 1, shape: Math.PI, fontsize: 16, barscale: 200};
 
   } else {
     // desktop
-    chartMargin = { top: 100, right: 100, bottom: 100, left: 100 };
-    chartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, fontsize: 12, barscale: 180};
+    wChartMargin = { top: 100, right: 100, bottom: 100, left: 100 };
+    wChartConfig = {radius: 0.3, separation: 2, shape: Math.PI * 2, fontsize: 12, barscale: 180};
   }
 
-  chartSettings = {
-    width:  window.innerWidth - chartMargin.left - chartMargin.right,
-    height: innerHeight + chartMargin.top + chartMargin.bottom,
+  wChartSettings = {
+    width:  window.innerWidth - wChartMargin.left - wChartMargin.right,
+    height: wInnerHeight + wChartMargin.top + wChartMargin.bottom,
   };
 
+  let wFirstView = true;
 
   // append the svg object to the body of the page
-  var svg = d3.select("#wordcloud").attr("style", "background-color:#222020;").append("svg")
-      .attr("width", chartSettings.width - chartMargin.left - chartMargin.right)
-      .attr("height", chartSettings.height - chartMargin.top - chartMargin.bottom)
+  var wSvg = d3.select("#wordcloud").attr("style", "background-color:#222020;").append("svg")
+      .attr("width", wChartSettings.width - wChartMargin.left - wChartMargin.right)
+      .attr("height", wChartSettings.height - wChartMargin.top - wChartMargin.bottom)
       .call(responsivefy)
     .append("g")
       // .attr("transform",
-      //       "translate(" + chartMargin.left + "," + chartMargin.top + ")");
+      //       "translate(" + wChartMargin.left + "," + wChartMargin.top + ")");
 
   // List of words
   var myWords = d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/data/signals-counted-wordcloud.csv").then(data =>
@@ -102,20 +106,11 @@
       extent = d3.extent(words.map(r => r['size']));
       fontSizeScale.domain(extent).range([14, 50])
     }
-    //TODO change alignment based on window size
-    // CODE
-    const x1 = -90;
-    const x2 = 90;
-    const n = 3;
-    const multiplier = ((Math.abs(x1) + Math.abs(x2)) / (n - 1)) || 1
-    const a = n;
-    const b = x1/multiplier;
-    const c = multiplier;
 
     // Constructs a new cloud layout instance. It run an algorithm to find the position of words that suits your requirements
     // Wordcloud features that are different from one word to the other must be here
     var layout = d3.layout.cloud()
-      .size([chartSettings.width - chartMargin.left - chartMargin.right, chartSettings.height - chartMargin.top - chartMargin.bottom])
+      .size([wChartSettings.width - wChartMargin.left - wChartMargin.right, wChartSettings.height - wChartMargin.top - wChartMargin.bottom])
       .words(words.map(function(d) { return {text: d.word, size:d.size}; }))
       .padding(fontSizeScale.range()[1]/4.5)        //space between words
       .rotate(0)
@@ -128,28 +123,28 @@
     // This function takes the output of 'layout' above and draw the words
     // Wordcloud features that are THE SAME from one word to the other can be here
     function draw(words) {
-      var defs = svg.append("defs");
+      var wDefs = wSvg.append("defs");
 
-      var gradient = defs.append("linearGradient")
+      var wGrad = wDefs.append("linearGradient")
           .attr("id", "svgGradient")
           .attr("x1", "0%")
           .attr("x2", "0%")
           .attr("y1", "0%")
           .attr("y2", "100%");
 
-      gradient.append("stop")
+      wGrad.append("stop")
       .attr("class", "start")
       .attr("offset", "0%")
       .attr("stop-color", "#6B6397")
       .attr("stop-opacity", 1);
 
-      gradient.append("stop")
+      wGrad.append("stop")
       .attr("class", "end")
       .attr("offset", "100%")
       .attr("stop-color", "#D8DCC4")
       .attr("stop-opacity", 1);
 
-      const text = svg
+      const wText = wSvg
         .append("g")
           .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
           .selectAll("text")
@@ -164,11 +159,30 @@
               return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
             })
 
-      text.transition()
-        .duration(3000)
-        .attr('transform', (d) => { return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')' })
-        .style("font-size", function(d) { return d.size + "px"; })
-        .text(d => d.text);
+      // text.transition()
+      //   .duration(3000)
+      //   .attr('transform', (d) => { return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')' })
+      //   .style("font-size", function(d) { return d.size + "px"; })
+      //   .text(d => d.text);
+
+
+        var wObvs = new IntersectionObserver(function(entries) {
+          if(entries[0].isIntersecting === true) {
+              console.log(wFirstView);
+              if (wFirstView) {
+                wText.transition()
+                  .duration(3000)
+                  .attr('transform', (d) => { return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')' })
+                  .style("font-size", function(d) { return d.size + "px"; })
+                  .text(d => d.text);
+                wFirstView = false;
+              }
+          }}, 
+          
+          { threshold: 0.5 });
+
+        wObvs.observe(document.querySelector("#wordcloud svg"));
+
     }
   });
 

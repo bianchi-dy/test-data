@@ -1,0 +1,314 @@
+<head>
+  <meta charset="UTF-8">
+  <script src="https://d3js.org/d3.v6.js"></script>
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+</head>
+<body>
+  <div id="radialbarContainer">
+    <svg id="radialbarSVG"></svg>
+  </div>
+</body>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+  #radialbarContainer {
+    position: relative;
+ }
+
+  .linktext {
+    font-family: 'Space Grotesk',sans-serif;
+    font-weight: regular;
+    stroke-linejoin: round;
+    stroke-width: 3;
+    fill: #1f3d51;
+    pointer-events: none !important;
+ }
+</style>
+<script type="text/javascript">
+  let innerHeight=1500;
+  let chartMargin,chartConfig,chartSettings;
+  let mobile=window.innerWidth<=1024 ? true : false;
+  if(mobile){
+    chartMargin={top: 10,right: 10,bottom: 10,left: 60};
+    chartConfig={radius: 0.8,separation: 1,shape: innerWidth/3,barWidth: 5,fontsize: 12,barscale: 200};
+ }else{
+    chartMargin={top: 20,right: 20,bottom: 20,left: 20};
+    chartConfig={radius: 0.3,separation: 2,shape: Math.PI * 2,barWidth: 0.01,fontsize: 14,barscale: 180};
+    mobile=false;
+ }
+
+  chartSettings={
+    width: innerWidth - chartMargin.left - chartMargin.right,
+    height: innerHeight - chartMargin.top - chartMargin.bottom,
+ };
+  
+  let svg=d3.select('#radialbarSVG')
+  .attr('width',chartSettings.width)
+  .attr('height',chartSettings.height)
+
+  var defs=svg.append("defs");
+
+  var gradient=defs.append("linearGradient")
+      .attr("id","svgGradient")
+      .attr("x1","0%")
+      .attr("x2","0%")
+      .attr("y1","0%")
+      .attr("y2","100%");
+
+  gradient.append("stop")
+    .attr("class","start")
+    .attr("offset","0%")
+    .attr("stop-color","#D8DCC4")
+    .attr("stop-opacity",1)
+  gradient.append("stop")
+    .attr("class","end")
+    .attr("offset","100%")
+    .attr("stop-color","#6B6397")
+    .attr("stop-opacity",1);
+
+    radialbar=d3
+      .select('#radialbarSVG')
+      .append('g')
+      .attr('class','chart')
+      .attr('transform',mobile ? `translate(${chartMargin.left},${chartMargin.top})` : 
+        `translate(${chartMargin.left+innerWidth / 2},${innerHeight / 2 - chartMargin.top})`);
+
+  d3.csv("https://raw.githubusercontent.com/bianchi-dy/test-data/main/signals.csv").then(data =>
+  {
+    const nestData=d3.groups(data,d => d['Big themes (5 only)'],(d => d['Themes']));
+
+    const children=[];
+    Object.keys(nestData).forEach(key => {
+      const subchildren=[];
+      const subdata=nestData[key][1];
+
+      Object.keys(subdata).forEach(subkey => {
+        subchildren.push({
+          name: subdata[subkey][0],
+          children: subdata[subkey][1],
+       });
+     });
+
+      children.push({
+        name: nestData[key][0],
+        children: subchildren,
+     });
+   });
+    const nestedNew={};
+    nestedNew.name="Signals";
+    nestedNew.children=children;
+    const treeData=d3
+    .hierarchy(nestedNew)
+    .sort((a,b) => d3.ascending(a.data.name,b.data.name))
+    .sum(d => parseInt(d['Count']));
+
+    let duration=800;
+    const radius=mobile ? innerHeight/2 : Math.min(chartSettings.width,chartSettings.height) * chartConfig.radius;
+    let size=mobile ? [chartSettings.height * 0.96,window.innerWidth/3] : [chartConfig.shape,radius];
+    const tree=d3
+      .tree()
+      .size(size)
+      .separation((a,b) => (a.parent === b.parent ? 1 : chartConfig.separation) / a.depth);
+    const root=tree(treeData);
+
+    let links=radialbar
+    .append('g')
+    .attr('class','linklines')
+    .selectAll('path')
+    .data(root.links())
+    .join('path')
+    .attr('d',d3
+      .linkRadial()
+      .angle(0)
+      .radius(0)
+    )
+    .attr('class',d => {
+      return 'layer-'+d.target.height;
+   })
+    .attr('fill','none')
+    .attr('stroke','#6B6397');
+
+    const bars=root.descendants().filter(d => d.depth === 3); 
+    bars.forEach((bar,i) => {
+      bars[i].x0=bars[i].x - chartConfig.barWidth;
+      bars[i].x1=bars[i].x+chartConfig.barWidth;
+   });
+
+    const scaleYRad=d3
+      .scaleSymlog()
+      .domain([0,440])
+      .range([radius+3,radius+chartConfig.barscale]);
+    
+    const scaleXBar=d3
+      .scaleSymlog()
+      .domain([0,440])
+      .range([1,chartConfig.barscale]);
+
+    const arc0=d3
+      .arc()
+      .startAngle(d => d.x0)
+      .endAngle(d => d.x1)
+      .innerRadius(radius)
+      .outerRadius(radius+0.05);
+
+    const arc1=d3
+      .arc()
+      .startAngle(d => d.x0)
+      .endAngle(d => d.x1)
+      .innerRadius(scaleYRad(0))
+      .outerRadius(d => scaleYRad(d.value));
+
+    let nodes=radialbar
+      .append('g')
+      .attr('class','circlegroup')
+      .selectAll('circle')
+      .data(root.descendants().filter(d => d.depth !== 3))
+      .join('circle')
+      .attr('class',d => `layer-${d.height}`)
+      .style("fill","url(#svgGradient)")
+      .attr('transform',d => {
+        if(mobile){
+          return `translate(${d.y},${d.x})`;
+       }else{
+          return `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y},0)`;
+       }
+     })
+      .attr('r',1e-6);
+
+    let postBars;
+    if(mobile){
+      postBars=radialbar
+        .append('g')
+        .attr('class','bars')
+        .lower()
+        .selectAll('path.bars')
+        .data(bars)
+          .enter()
+          .append("rect") 
+            .attr("width",0)
+            .attr("height",chartConfig.barWidth)
+            .attr('transform',d =>  `translate(${d.y},${d.x})`);
+   }else{
+      postBars=radialbar
+      .append('g')
+      .attr('class','bars')
+      .lower()
+      .selectAll('path.bars')
+      .data(bars)
+        .join('path')
+        .attr('class','bars')
+        .attr('d',arc0)
+        .attr('fill','none');
+
+   }
+
+    let text=radialbar
+    .append('g')
+    .attr('class','linktext')
+    .attr('font-size',(chartConfig.fontsize - 2)+'px')
+    .selectAll('text')
+    .data(root.descendants())
+    .join('text')
+    .attr('class',d => `text-${d.height}`)
+    .attr('id',d => {
+      if(d.height === 2 || d.height === 3){
+        return d.data.name;
+     }
+      return '';
+   })
+    .attr(
+      'transform',d => {
+      let y=d.y;
+      if(d.height === 0){
+        y=mobile ? size[1]+5+scaleXBar(d.value) : scaleYRad(d.value);
+     }
+
+      return mobile ? `translate(${y},${d.x})` : 
+      `rotate(${(d.x * 180) / Math.PI - 90}) translate(${y},0) rotate(${d.x >= Math.PI ? 180 : 0})`;
+   })
+    .attr('dy',mobile? '0.5em' : '0.3em')
+    .attr('x',d => mobile ? 0 : d.x < Math.PI === !d.children ? 6 : -6)
+    .attr('text-anchor',d => mobile ? (d.height !== 0 ? 'end' : 'start') : (d.x < Math.PI === !d.children ? 'start' : 'end'))
+    .html(d => {
+      let text;
+      if(d.height === 0){
+        text=d.data.Signals;
+     }else{
+        text=d.data.name;
+     }
+      
+      if(text.length > 10 && text.includes(' ') && d.height !==0 && !mobile){
+        let texts=text.split(' ');
+        let newText=''
+        if(Math.ceil(texts.length /2) > 1){
+          newText+=`<tspan x=0 dy="0em">${texts[0]} ${texts[1]}</tspan>`;
+          let height=1;
+          let runs=Math.ceil(texts.length / 2);
+
+          for (let i=1; i<=runs; i+=1){
+            let el=`<tspan x=0 dy="${height * i}em">${texts[i*2]}`;
+            let nextEl=` ${texts[i*2+1]}</tspan>`;
+            
+            if(texts[i*2] !== undefined){
+              newText+=el;
+           }
+
+            if(texts[i*2+1] !== undefined){
+              newText+=nextEl;
+           }else{
+              newText+="</tspan>";
+           }
+         }
+       }else{
+          newText+=`<tspan x=0 dy="0em">${texts[0]} ${texts[1]}</tspan>`;
+       }
+        return newText;
+     }
+      return text;
+   })
+    .attr('opacity',0);
+    
+    let linkCurve=d3.linkRadial().angle(d => d.x).radius(d => d.y)
+    let linkSquare=  
+      function elbow(d){
+        return "M"+d.source.y+","+d.source.x
+                  +"H"+d.target.y+"V"+d.target.x;
+                  +(d.target.children? "" : "h"+chartMargin.right);
+     }
+
+    let firstView=true;
+
+    var observer=new IntersectionObserver(function(entries){
+      if(entries[0].isIntersecting === true){
+          if(firstView){
+            links.transition()
+              .duration(duration * 1.5)
+              .attr('d',mobile ? linkSquare : linkCurve);
+              setTimeout(function(){
+                nodes.transition().duration(duration).attr('r',6);
+
+                setTimeout(function(){
+
+                  if(mobile){
+                    postBars.transition()
+                      .duration(duration * 1.5)
+                      .attr("width",d => scaleXBar(d.value))
+                      .attr('fill','#6B6397');
+                   }else{
+                    postBars.transition()
+                      .duration(duration * 1.5)
+                      .attr('d',arc1)
+                      .attr('fill','#6B6397');
+                 }
+                  text.transition()
+                  .duration(duration * 2)
+                  .attr('opacity',1);
+               },duration);
+             },duration);
+
+            firstView=false;
+         }
+     }  
+   },{threshold: 0.5});
+    observer.observe(document.querySelector("#radialbarContainer svg"));
+ })
+</script>
